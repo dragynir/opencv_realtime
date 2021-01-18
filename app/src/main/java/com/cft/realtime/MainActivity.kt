@@ -9,6 +9,8 @@ import android.view.SurfaceView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.cft.realtime.process.Analyzer
+import com.cft.realtime.process.CameraView
 import org.opencv.android.*
 import org.opencv.core.Mat
 
@@ -18,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_CODE_CAMERA_PERMISSION = 101
     }
 
-    private lateinit var mOpenCvCameraView: JavaCameraView
+    private lateinit var mOpenCvCameraView: CameraView
     private lateinit var mIntermediateMat: Mat
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,6 +100,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        mOpenCvCameraView.onResumeALPR()
+
         // there's no need to load the opencv library if there is no camera preview (I think that sounds reasonable (?))
         if (ContextCompat.checkSelfPermission(
                         this,

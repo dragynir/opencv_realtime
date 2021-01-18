@@ -21,7 +21,7 @@ public interface ICameraView {
 
     void setTapToFocus(boolean enabled);
 
-    void setResultsCallback(ALPR.ResultsCallback callback);
+    void setResultsCallback(Analyzer.ResultsCallback callback);
 
     void onResumeALPR();
 

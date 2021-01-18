@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.ListIterator;
 
 
-public class ALPRCameraView extends JavaCameraView implements ICameraView {
+public class CameraView extends JavaCameraView implements ICameraView {
 
-    private static final String TAG = ALPRCameraView.class.getSimpleName();
-    private ALPR.ResultsCallback callback;
+    private static final String TAG = CameraView.class.getSimpleName();
+    private Analyzer.ResultsCallback callback;
     private int quality = Quality.MEDIUM;
     private Size highResolution;
     private Size mediumResolution;
@@ -42,11 +42,11 @@ public class ALPRCameraView extends JavaCameraView implements ICameraView {
     private boolean torchEnabled = false;
     private int rotation;
 
-    public ALPRCameraView(Context context, int cameraId) {
+    public CameraView(Context context, int cameraId) {
         super(context, cameraId);
     }
 
-    public ALPRCameraView(Context context, AttributeSet attrs) {
+    public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
@@ -75,25 +75,24 @@ public class ALPRCameraView extends JavaCameraView implements ICameraView {
             public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
                 Mat rgba = inputFrame.rgba();
 
-
                 Log.d("CAM_RGB", "RGB");
 
-                if (callback != null) {
-                    ALPR.getInstance().process(rgba, country, rotation, new ALPR.ResultsCallback() {
+//                if (callback != null) {
+                    Analyzer.getInstance().process(rgba, rotation, new Analyzer.ResultsCallback() {
                         @Override
-                        public void onResults(String plate, String confidence, String processingTimeMs, List<android.graphics.Point> coordinates) {
+                        public void onResults(Boolean hasMeter) {
                             if (getContext() == null) return;
-                            ALPRCameraView.this.coordinates = getOpenCVPoints(coordinates);
-                            callback.onResults(plate, confidence, processingTimeMs, coordinates);
+                            Log.d("CAM_MSG", hasMeter.toString());
+//                            callback.onResults(hasMeter);
                         }
 
                         @Override
                         public void onFail() {
                             if (getContext() == null) return;
-                            callback.onFail();
+//                            callback.onFail();
                         }
                     }, new WeakReference<>(getContext()));
-                }
+//                }
 
                 return rgba;
             }
@@ -132,6 +131,14 @@ public class ALPRCameraView extends JavaCameraView implements ICameraView {
             add(blP);
         }};
     }
+
+
+    @Override
+    public void setResultsCallback(Analyzer.ResultsCallback callback) {
+        this.callback = callback;
+    }
+
+
 //
 //    @Override
 //    protected int[] getPlateBorderRgb() {
@@ -235,39 +242,40 @@ public class ALPRCameraView extends JavaCameraView implements ICameraView {
     }
 
     @Override
-    public void setResultsCallback(ALPR.ResultsCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
     public void onResumeALPR() {
         if (getContext() == null) return;
-        BaseLoaderCallback loaderCallback = new BaseLoaderCallback(getContext()) {
-            @Override
-            public void onManagerConnected(int status) {
-                switch (status) {
-                    case LoaderCallbackInterface.SUCCESS: {
-                        Log.i(TAG, "OpenCV loaded successfully");
-                        if (getContext() != null) {
-                            setCvCameraViewListener(createCvCameraViewListener());
-                            ALPRCameraView.this.enableView();
-                        }
-                    }
-                    break;
-                    default: {
-                        super.onManagerConnected(status);
-                    }
-                    break;
-                }
-            }
-        };
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, getContext(), loaderCallback);
-        } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!");
-            loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
+
+        setCvCameraViewListener(createCvCameraViewListener());
+        CameraView.this.enableView();
+
+//        BaseLoaderCallback loaderCallback = new BaseLoaderCallback(getContext()) {
+//            @Override
+//            public void onManagerConnected(int status) {
+//                switch (status) {
+//                    case LoaderCallbackInterface.SUCCESS: {
+//                        Log.i(TAG, "OpenCV loaded successfully");
+//                        if (getContext() != null) {
+//                            setCvCameraViewListener(createCvCameraViewListener());
+//                            CameraView.this.enableView();
+//                        }
+//                    }
+//                    break;
+//                    default: {
+//                        super.onManagerConnected(status);
+//                    }
+//                    break;
+//                }
+//            }
+//        };
+//        if (!OpenCVLoader.initDebug()) {
+//            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+//            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, getContext(), loaderCallback);
+//        } else {
+//            Log.d(TAG, "OpenCV library found inside package. Using it!");
+//            loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+//        }
+
+
     }
 
     @Override
@@ -386,6 +394,6 @@ public class ALPRCameraView extends JavaCameraView implements ICameraView {
     public void disableView() {
 //        removeCvCameraViewListener();
         super.disableView();
-        ALPR.getInstance().finish();
+        Analyzer.getInstance().finish();
     }
 }
