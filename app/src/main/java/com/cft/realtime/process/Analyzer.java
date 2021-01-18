@@ -12,6 +12,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
 
+import com.cft.realtime.process.model.MetersFinder;
 import com.google.gson.JsonSyntaxException;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -29,13 +30,15 @@ public class Analyzer {
     private static Analyzer instance;
     private Handler mHandler = null;
     private AtomicBoolean isProcessing = new AtomicBoolean(false);
+    private MetersFinder metersFinder;
+
 
     /**
      * constructor for initialization message handling on separate thread
      */
-    private Analyzer() {
+    private Analyzer(Context context) {
         // load models
-
+        metersFinder = new MetersFinder(context.getAssets());
 
         HandlerThread handlerThread = new HandlerThread("HandlerThread");
         handlerThread.start();
@@ -62,9 +65,9 @@ public class Analyzer {
     /**
      * singleton implementation, is used from main thread only
      */
-    static Analyzer getInstance() {
+    static Analyzer getInstance(WeakReference<Context> context) {
         if (instance == null) {
-            instance = new Analyzer();
+            instance = new Analyzer(context.get());
         }
         return instance;
     }
@@ -81,6 +84,7 @@ public class Analyzer {
     private void executeRecognition(final Mat m, final ResultsCallback callback, final WeakReference<Context> context, int rotation) {
         Log.i(TAG, "executeRecognition");
         Context ctx = context.get();
+
         if (ctx == null) {
             finishExecution(ctx, callback);
             return;
@@ -96,6 +100,8 @@ public class Analyzer {
         Utils.matToBitmap(m, bm);
 
 
+        final boolean hasMeter =  metersFinder.findMeter(bm);
+
         Handler handler = new Handler(ctx.getMainLooper());
 
         handler.post(new Runnable() {
@@ -103,7 +109,7 @@ public class Analyzer {
             @Override
             public void run() {
 
-                callback.onResults(true);
+                callback.onResults(hasMeter);
                 // callback.onFail();
 
                 if (isProcessing != null) isProcessing.set(false);
@@ -155,6 +161,7 @@ public class Analyzer {
      * entry point for frame processing request
      */
     void process(final Mat m, int rotation, final ResultsCallback callback, final WeakReference<Context> context) {
+
         // post message to separate thread with image and related data
         if (!mHandler.hasMessages(10) && isProcessing.compareAndSet(false, true)) {
             HashMap<String, Object> map = new HashMap<>();

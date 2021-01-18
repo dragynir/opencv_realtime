@@ -78,7 +78,7 @@ public class CameraView extends JavaCameraView implements ICameraView {
                 Log.d("CAM_RGB", "RGB");
 
 //                if (callback != null) {
-                    Analyzer.getInstance().process(rgba, rotation, new Analyzer.ResultsCallback() {
+                    Analyzer.getInstance(new WeakReference<>(getContext())).process(rgba, rotation, new Analyzer.ResultsCallback() {
                         @Override
                         public void onResults(Boolean hasMeter) {
                             if (getContext() == null) return;
@@ -394,6 +394,6 @@ public class CameraView extends JavaCameraView implements ICameraView {
     public void disableView() {
 //        removeCvCameraViewListener();
         super.disableView();
-        Analyzer.getInstance().finish();
+        Analyzer.getInstance(new WeakReference<>(getContext())).finish();
     }
 }
