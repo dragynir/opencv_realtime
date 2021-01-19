@@ -74,7 +74,6 @@ public class Analyzer {
 
     public interface ResultsCallback {
         void onResults(Boolean hasMeter);
-
         void onFail();
     }
 

@@ -20,13 +20,15 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
 
-public class CameraView extends JavaCameraView implements ICameraView {
+public class CameraView extends JavaCameraView implements ICameraView, Camera.PictureCallback {
 
     private static final String TAG = CameraView.class.getSimpleName();
     private Analyzer.ResultsCallback callback;
@@ -41,6 +43,7 @@ public class CameraView extends JavaCameraView implements ICameraView {
     private boolean tapToFocusEnabled;
     private boolean torchEnabled = false;
     private int rotation;
+    private File filename;
 
     public CameraView(Context context, int cameraId) {
         super(context, cameraId);
@@ -48,6 +51,30 @@ public class CameraView extends JavaCameraView implements ICameraView {
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+    }
+
+    @Override
+    public void onPictureTaken(byte[] data, Camera camera) {
+        try {
+            FileOutputStream fos = new FileOutputStream(this.filename);
+
+            fos.write(data);
+            fos.close();
+
+        } catch (java.io.IOException e) {
+            Log.e("PictureDemo", "Exception in photoCallback", e);
+        }
+    }
+
+    public void takePicture(final File fileName) {
+        Log.i("PICTURE", "Taking picture");
+        this.filename = fileName;
+        // Postview and jpeg are sent in the same buffers if the queue is not empty when performing a capture.
+        // Clear up buffers to avoid mCamera.takePicture to be stuck because of a memory issue
+        mCamera.setPreviewCallback(null);
+
+        // PictureCallback is implemented by the current class
+        mCamera.takePicture(null, null, this);
     }
 
 
@@ -83,7 +110,7 @@ public class CameraView extends JavaCameraView implements ICameraView {
                         public void onResults(Boolean hasMeter) {
                             if (getContext() == null) return;
                             Log.d("CAM_MSG", hasMeter.toString());
-//                            callback.onResults(hasMeter);
+                            callback.onResults(hasMeter);
                         }
 
                         @Override

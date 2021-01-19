@@ -1,7 +1,10 @@
 package com.cft.realtime
 
 import android.Manifest
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -11,8 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.cft.realtime.process.Analyzer
 import com.cft.realtime.process.CameraView
-import org.opencv.android.*
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.CameraBridgeViewBase
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +36,25 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         mOpenCvCameraView = findViewById(R.id.camera_view)
+
+        mOpenCvCameraView.setResultsCallback(object: Analyzer.ResultsCallback{
+            override fun onFail() {
+
+            }
+
+            override fun onResults(hasMeter: Boolean?) {
+                val cw = ContextWrapper(applicationContext)
+                val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
+                val mypath = File(directory, "test.png")
+                mOpenCvCameraView.takePicture(mypath)
+
+                val b = BitmapFactory.decodeFile(mypath.absolutePath)
+
+                Log.d("PICTURE", "load picture")
+
+                DebugModelsUtils.saveToGallery(applicationContext, b, "test1")
+            }
+        })
 
         // this is ViewBinding for Android
 
