@@ -44,6 +44,8 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private boolean torchEnabled = false;
     private int rotation;
     private File filename;
+    private int goodPhotoCounter = 0;
+    private int MIN_COUNT = 10;
 
     public CameraView(Context context, int cameraId) {
         super(context, cameraId);
@@ -110,7 +112,15 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                         public void onResults(Boolean hasMeter) {
                             if (getContext() == null) return;
                             Log.d("CAM_MSG", hasMeter.toString());
-                            callback.onResults(hasMeter);
+
+                            if(hasMeter){
+                                goodPhotoCounter++;
+                                if(goodPhotoCounter > MIN_COUNT){
+                                    callback.onResults(true);
+                                }
+                            }else if(goodPhotoCounter > 0){
+                                goodPhotoCounter--;
+                            }
                         }
 
                         @Override

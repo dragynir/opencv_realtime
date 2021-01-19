@@ -53,6 +53,8 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PICTURE", "load picture")
 
                 DebugModelsUtils.saveToGallery(applicationContext, b, "test1")
+
+                mOpenCvCameraView.disableView()
             }
         })
 
