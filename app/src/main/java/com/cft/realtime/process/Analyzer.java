@@ -99,7 +99,7 @@ public class Analyzer {
         Utils.matToBitmap(m, bm);
 
 
-        final boolean hasMeter =  metersFinder.findMeter(bm);
+        final boolean hasMeter = metersFinder.findMeter(bm);
 
         Handler handler = new Handler(ctx.getMainLooper());
 
