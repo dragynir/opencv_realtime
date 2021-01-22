@@ -43,7 +43,8 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     private static final String TAG = CameraView.class.getSimpleName();
     private Analyzer.ResultsCallback callback;
-    private int quality = Quality.MEDIUM;
+    private int quality = Quality.MAX;
+    private Size maxResolution;
     private Size highResolution;
     private Size mediumResolution;
     private Size lowResolution;
@@ -52,7 +53,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private boolean plateBorderEnabled;
     private String country = "us";
     private boolean tapToFocusEnabled;
-    private boolean torchEnabled = false;
+    private boolean torchEnabled = true;
     private int rotation;
     private File filename;
     private int goodPhotoCounter = 0;
@@ -170,6 +171,13 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 int saveCount = canvas.save();
                 canvas.setMatrix(mMatrix);
 
+                if(mCacheBitmap.getWidth() > canvas.getHeight() && mCacheBitmap.getWidth() > canvas.getHeight()){
+                    float scale1 = canvas.getWidth()*1.0f/mCacheBitmap.getWidth();
+                    float scale2 = canvas.getHeight()*1.0f/mCacheBitmap.getHeight();
+
+                    mScale = Math.min(scale1, scale2);
+                }
+
                 if (mScale != 0) {
                     canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
                             new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
@@ -200,6 +208,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         int LOW = 0;
         int MEDIUM = 1;
         int HIGH = 2;
+        int MAX = 3;
     }
 
     private CvCameraViewListener2 createCvCameraViewListener() {
@@ -314,13 +323,17 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     private void initResolutions() {
         List<Size> resolutionList = mCamera.getParameters().getSupportedPreviewSizes();
-        highResolution = mCamera.getParameters().getPreviewSize();
-        mediumResolution = highResolution;
-        lowResolution = mediumResolution;
+        maxResolution = mCamera.getParameters().getPreviewSize();
+        highResolution = maxResolution;
+        mediumResolution = maxResolution;
+        lowResolution = maxResolution;
 
         ListIterator<Size> resolutionItr = resolutionList.listIterator();
         while (resolutionItr.hasNext()) {
             Size s = resolutionItr.next();
+            if (s.width > maxResolution.width && s.height > maxResolution.height)
+                maxResolution = s;
+
             if (s.width < highResolution.width && s.height < highResolution.height && mediumResolution.equals(highResolution)) {
                 mediumResolution = s;
             } else if (s.width < mediumResolution.width && s.height < mediumResolution.height) {
@@ -338,7 +351,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         disconnectCamera();
         mMaxHeight = resolution.height;
         mMaxWidth = resolution.width;
-        connectCamera(getWidth(), getHeight());
+        connectCamera(resolution.width, resolution.height);
     }
 
     public void setQuality(int captureQuality) {
@@ -391,6 +404,9 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 break;
             case Quality.HIGH:
                 setResolution(highResolution);
+                break;
+            case Quality.MAX:
+                setResolution(maxResolution);
                 break;
         }
     }
