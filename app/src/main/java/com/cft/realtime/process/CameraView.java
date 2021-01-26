@@ -6,7 +6,6 @@ import android.content.ContextWrapper;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
@@ -17,23 +16,24 @@ import android.hardware.Camera.Size;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.WindowManager;
 
-import org.opencv.BuildConfig;
-import org.opencv.android.BaseLoaderCallback;
+//import com.facebook.react.uimanager.ThemedReactContext;
+
 import org.opencv.android.JavaCameraView;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -43,11 +43,13 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     private static final String TAG = CameraView.class.getSimpleName();
     private Analyzer.ResultsCallback callback;
+    private ImageSavedCallback onSavedCallback;
     private int quality = Quality.MAX;
-    private Size maxResolution;
     private Size highResolution;
     private Size mediumResolution;
     private Size lowResolution;
+    private Size maxResolution;
+
     private List<Point> coordinates;
     private int[] plateBorderRgb = new int[]{0, 0, 255};
     private boolean plateBorderEnabled;
@@ -59,6 +61,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private int goodPhotoCounter = 0;
     private int MIN_COUNT = 10;
 
+
     private CvCameraViewListener2 mListener;
     private Bitmap mCacheBitmap;
 
@@ -68,19 +71,53 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mScale = 1;
+    }
+
+    public interface ImageSavedCallback {
+        void onResults(String imagePath);
+    }
+
+
+    private void applyOrientation(Mat rgba, boolean clockwise, int rotation) {
+        if (rotation == Surface.ROTATION_0) {
+            // Rotate clockwise / counter clockwise 90 degrees
+            Mat rgbaT = rgba.t();
+            Core.flip(rgbaT, rgba, clockwise ? 1 : -1);
+            rgbaT.release();
+        } else if (rotation == Surface.ROTATION_270) {
+            // Rotate clockwise / counter clockwise 180 degrees
+            Mat rgbaT = rgba.t();
+            Core.flip(rgba.t(), rgba, clockwise ? 1 : -1);
+            rgbaT.release();
+            Mat rgbaT2 = rgba.t();
+            Core.flip(rgba.t(), rgba, clockwise ? 1 : -1);
+            rgbaT2.release();
+        }
     }
 
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
         try {
+            Mat mat = Imgcodecs.imdecode(new MatOfByte(data), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
+            applyOrientation(mat, true, rotation);
+
+            Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB);
+
+            Bitmap btm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mat, btm);
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            btm.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            byte[] byteArray = byteArrayOutputStream .toByteArray();
+
             FileOutputStream fos = new FileOutputStream(this.filename);
-
-            fos.write(data);
+            fos.write(byteArray);
             fos.close();
-
         } catch (java.io.IOException e) {
             Log.e("PictureDemo", "Exception in photoCallback", e);
         }
+        onSavedCallback.onResults(this.filename.getAbsolutePath());
     }
 
     public void takePicture(final File fileName) {
@@ -91,8 +128,10 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         mCamera.setPreviewCallback(null);
 
         // PictureCallback is implemented by the current class
+
         mCamera.takePicture(null, null, this);
     }
+
 
     private final Matrix mMatrix = new Matrix();
 
@@ -103,7 +142,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         float hw = this.getWidth() / 2.0f;
         float hh = this.getHeight() / 2.0f;
 
-        float cw  = (float)Resources.getSystem().getDisplayMetrics().widthPixels; //Make sure to import Resources package
+        float cw  = (float) Resources.getSystem().getDisplayMetrics().widthPixels; //Make sure to import Resources package
         float ch  = (float)Resources.getSystem().getDisplayMetrics().heightPixels;
 
         float scale = cw / (float)mh;
@@ -140,6 +179,14 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         updateMatrix();
     }
 
+    public void setMScale(float value){
+        mScale = value;
+    }
+
+    public float getMScale(){
+        return mScale;
+    }
+
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) { //replaces existing deliverAndDrawFrame
         Mat modified;
 
@@ -171,26 +218,19 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 int saveCount = canvas.save();
                 canvas.setMatrix(mMatrix);
 
-                if(mCacheBitmap.getWidth() > canvas.getHeight() && mCacheBitmap.getWidth() > canvas.getHeight()){
-                    float scale1 = canvas.getWidth()*1.0f/mCacheBitmap.getWidth();
-                    float scale2 = canvas.getHeight()*1.0f/mCacheBitmap.getHeight();
+                float scale1 = canvas.getWidth()*1.0f/mCacheBitmap.getWidth();
+                float scale2 = canvas.getHeight()*1.0f/mCacheBitmap.getHeight();
 
-                    mScale = Math.min(scale1, scale2);
-                }
+                float scale = mScale * Math.min(scale1, scale2);
 
-                if (mScale != 0) {
-                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-                            new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
-                                    (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2),
-                                    (int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2 + mScale*mCacheBitmap.getWidth()),
-                                    (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2 + mScale*mCacheBitmap.getHeight())), null);
-                } else {
-                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-                            new Rect((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,
-                                    (canvas.getHeight() - mCacheBitmap.getHeight()) / 2,
-                                    (canvas.getWidth() - mCacheBitmap.getWidth()) / 2 + mCacheBitmap.getWidth(),
-                                    (canvas.getHeight() - mCacheBitmap.getHeight()) / 2 + mCacheBitmap.getHeight()), null);
-                }
+                Rect src = new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight());
+
+                Rect dst = new Rect((int)((canvas.getWidth() - scale*mCacheBitmap.getWidth()) / 2),
+                                (int)((canvas.getHeight() - scale*mCacheBitmap.getHeight()) / 2),
+                                (int)((canvas.getWidth() - scale*mCacheBitmap.getWidth()) / 2 + scale*mCacheBitmap.getWidth()),
+                                (int)((canvas.getHeight() - scale*mCacheBitmap.getHeight()) / 2 + scale*mCacheBitmap.getHeight()));
+
+                canvas.drawBitmap(mCacheBitmap, src, dst, null);
 
                 //Restore canvas after draw bitmap
                 canvas.restoreToCount(saveCount);
@@ -231,35 +271,33 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
                 Log.d("CAM_RGB", "RGB");
 
-//                if (callback != null) {
-                Analyzer.getInstance(new WeakReference<>(getContext())).process(rgba, rotation, new Analyzer.ResultsCallback() {
-                    @Override
-                    public void onResults(Boolean hasMeter) {
-                        if (getContext() == null) return;
-                        Log.d("CAM_MSG", hasMeter.toString());
+                if (callback != null) {
+                    Analyzer.getInstance(new WeakReference<>(getContext())).process(rgba, rotation, new Analyzer.ResultsCallback() {
+                        @Override
+                        public void onResults(Boolean hasMeter) {
+                            if (getContext() == null) return;
+                            Log.d("CAM_MSG", hasMeter.toString());
 
-                        if(hasMeter){
-                            goodPhotoCounter++;
-                            if(goodPhotoCounter > MIN_COUNT){
-                                callback.onResults(true);
+                            if(hasMeter){
+                                goodPhotoCounter++;
+                                if(goodPhotoCounter > MIN_COUNT){
+                                    callback.onResults(true);
+                                }
+                            }else if(goodPhotoCounter > 0){
+                                goodPhotoCounter--;
                             }
-                        }else if(goodPhotoCounter > 0){
-                            goodPhotoCounter--;
                         }
-                    }
 
-                    @Override
-                    public void onFail() {
-                        if (getContext() == null) return;
+                        @Override
+                        public void onFail() {
+                            if (getContext() == null) return;
 //                            callback.onFail();
-                    }
-                }, new WeakReference<>(getContext()));
-//                }
-
+                        }
+                    }, new WeakReference<>(getContext()));
+                }
                 return rgba;
             }
         };
-
         return mListener;
     }
 
@@ -270,56 +308,22 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             return (Activity) viewContext;
         else if (viewContext instanceof ContextWrapper)
             return scanForActivity(((ContextWrapper) viewContext).getBaseContext());
-//
-//        else if (viewContext instanceof ThemedReactContext)
-//            return ((ThemedReactContext) viewContext).getCurrentActivity();
+
+        //else if (viewContext instanceof ThemedReactContext)
+        //    return ((ThemedReactContext) viewContext).getCurrentActivity();
+
         return null;
     }
 
-    private List<Point> getOpenCVPoints(List<android.graphics.Point> coordinates) {
-        android.graphics.Point tl = coordinates.get(0);
-        android.graphics.Point tr = coordinates.get(1);
-        android.graphics.Point br = coordinates.get(2);
-        android.graphics.Point bl = coordinates.get(3);
-
-        final Point tlP = new Point(tl.x, tl.y);
-        final Point trP = new Point(tr.x, tr.y);
-        final Point brP = new Point(br.x, br.y);
-        final Point blP = new Point(bl.x, bl.y);
-
-        return new ArrayList<Point>() {{
-            add(tlP);
-            add(trP);
-            add(brP);
-            add(blP);
-        }};
+    //@Override
+    public void setOnImageSavedCallback(ImageSavedCallback onSavedCallback){
+        this.onSavedCallback = onSavedCallback;
     }
-
 
     @Override
     public void setResultsCallback(Analyzer.ResultsCallback callback) {
         this.callback = callback;
     }
-
-
-//
-//    @Override
-//    protected int[] getPlateBorderRgb() {
-//        return plateBorderRgb;
-//    }
-//
-//    @Override
-//    protected Point[] getCoordinates() {
-//        if (coordinates == null || !plateBorderEnabled) {
-//            return null;
-//        }
-//        Point tl = coordinates.get(0);
-//        Point br = coordinates.get(2);
-//        Point tlP = new Point(widthOffset + tl.x * widthRatio, heightOffset + tl.y * heightRatio);
-//        Point brP = new Point(widthOffset + br.x * widthRatio, heightOffset + br.y * heightRatio);
-//
-//        return new Point[]{tlP, brP};
-//    }
 
     private void initResolutions() {
         List<Size> resolutionList = mCamera.getParameters().getSupportedPreviewSizes();
@@ -345,6 +349,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         }
         applyQuality(quality);
     }
+
 
     private void setResolution(Size resolution) {
         if (resolution == null) return;
@@ -385,7 +390,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 //                this.aspect = JavaCameraView.ALPRCameraAspect.ALPRCameraAspectFill;
 //                break;
 //            case ALPRCameraManager.ALPRCameraAspect.ALPRCameraAspectFit:
-//                this.aspect = JavaCameraView.ALPRCameraAspect.ALPRCameraAspectFit;
+        this.setAspect(1);
 //                break;
 //            case ALPRCameraManager.ALPRCameraAspect.ALPRCameraAspectStretch:
 //                this.aspect = JavaCameraView.ALPRCameraAspect.ALPRCameraAspectStretch;
@@ -411,41 +416,13 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         }
     }
 
+
     @Override
     public void onResumeALPR() {
         if (getContext() == null) return;
 
         setCvCameraViewListener(createCvCameraViewListener());
         CameraView.this.enableView();
-
-//        BaseLoaderCallback loaderCallback = new BaseLoaderCallback(getContext()) {
-//            @Override
-//            public void onManagerConnected(int status) {
-//                switch (status) {
-//                    case LoaderCallbackInterface.SUCCESS: {
-//                        Log.i(TAG, "OpenCV loaded successfully");
-//                        if (getContext() != null) {
-//                            setCvCameraViewListener(createCvCameraViewListener());
-//                            CameraView.this.enableView();
-//                        }
-//                    }
-//                    break;
-//                    default: {
-//                        super.onManagerConnected(status);
-//                    }
-//                    break;
-//                }
-//            }
-//        };
-//        if (!OpenCVLoader.initDebug()) {
-//            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-//            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, getContext(), loaderCallback);
-//        } else {
-//            Log.d(TAG, "OpenCV library found inside package. Using it!");
-//            loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-//        }
-
-
     }
 
     @Override
@@ -470,20 +447,18 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 camera.cancelAutoFocus();
                 camera.setParameters(parameters);
                 camera.startPreview();
-                camera.autoFocus(new Camera.AutoFocusCallback() {
-                    @Override
-                    public void onAutoFocus(boolean success, Camera camera) {
-                        if (camera.getParameters().getFocusMode().equals(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                            Parameters parameters = camera.getParameters();
-                            parameters.setFocusMode(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-                            if (parameters.getMaxNumFocusAreas() > 0) {
-                                parameters.setFocusAreas(null);
-                            }
-                            camera.setParameters(parameters);
-                            camera.startPreview();
+
+                /*camera.autoFocus((success, camera1) -> {
+                    if (camera1.getParameters().getFocusMode().equals(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                        Parameters parameters1 = camera1.getParameters();
+                        parameters1.setFocusMode(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                        if (parameters1.getMaxNumFocusAreas() > 0) {
+                            parameters1.setFocusAreas(null);
                         }
+                        camera1.setParameters(parameters1);
+                        camera1.startPreview();
                     }
-                });
+                });*/
             } catch (Exception e) {
                 Log.e(TAG, "onTouchEvent", e);
             }
@@ -497,11 +472,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     }
 
     @Override
-    public void setZoom(int zoom) {
-//        disableView();
-//        this.zoom = zoom;
-//        onResumeALPR();
-    }
+    public void setZoom(int zoom) { }
 
     @Override
     public void setTapToFocus(boolean enabled) {
@@ -562,7 +533,6 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     @Override
     public void disableView() {
-//        removeCvCameraViewListener();
         super.disableView();
         Analyzer.getInstance(new WeakReference<>(getContext())).finish();
     }
