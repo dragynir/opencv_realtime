@@ -173,9 +173,18 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         try {
             Bitmap btm = BitmapFactory.decodeByteArray(data, 0, data.length);
 
+            Matrix matrix = new Matrix();
+
+            matrix.postRotate(90);
+
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(btm, btm.getWidth(), btm.getHeight(), true);
+
+            Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+
+
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-            btm.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
             byte[] byteArray = byteArrayOutputStream.toByteArray();
 
             FileOutputStream fos = new FileOutputStream(this.filename);
@@ -200,7 +209,6 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
         mCamera.takePicture(null, null, this);
     }
-
 
     private final Matrix mMatrix = new Matrix();
 
