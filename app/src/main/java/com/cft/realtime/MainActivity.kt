@@ -23,10 +23,6 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    companion object {
-        private const val REQUEST_CODE_CAMERA_PERMISSION = 101
-    }
-
     private lateinit var mOpenCvCameraView: CameraView
     private lateinit var mIntermediateMat: Mat
 
@@ -58,63 +54,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // this is ViewBinding for Android
-
-        // check for necessary camera permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            when {
-                ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.CAMERA
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // camera permission granted
-                    activateOpenCVCameraView()
-                }
-                shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
-                    // In an educational UI, explain to the user why your app requires this
-                    // permission for a specific feature to behave as expected. In this UI,
-                    // include a "cancel" or "no thanks" button that allows the user to
-                    // continue using your app without granting the permission.
-                }
-                else -> {
-                    // directly ask for the permission.
-                    requestPermissions(
-                            arrayOf(Manifest.permission.CAMERA),
-                            REQUEST_CODE_CAMERA_PERMISSION
-                    )
-                }
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<out String>,
-            grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        // overengineered check for if permission with our request code and permission name was granted
-        if (requestCode == REQUEST_CODE_CAMERA_PERMISSION) {
-            val indexOfCameraPermission = permissions.indexOf(Manifest.permission.CAMERA)
-            if (indexOfCameraPermission != -1) {
-                if (grantResults.isNotEmpty()) {
-                    if (grantResults[indexOfCameraPermission] == PackageManager.PERMISSION_GRANTED) {
-                        Toast.makeText(
-                                applicationContext,
-                                "Camera permission granted!",
-                                Toast.LENGTH_LONG
-                        ).show()
-                        activateOpenCVCameraView()
-                    } else {
-                        Toast.makeText(
-                                applicationContext,
-                                "Camera permission is required to run this app!",
-                                Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            }
-        }
     }
 
     private fun activateOpenCVCameraView() {
@@ -162,12 +101,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onDestroy() {
-        mOpenCvCameraView.disableView()
-        super.onDestroy()
-    }
-
     private fun log(message: String) {
-        Log.i("MainActivity", message)
+        Log.e("repair", message)
     }
 }

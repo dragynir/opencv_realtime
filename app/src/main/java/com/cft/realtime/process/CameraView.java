@@ -1,9 +1,12 @@
 package com.cft.realtime.process;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -13,15 +16,24 @@ import android.hardware.Camera;
 import android.hardware.Camera.Area;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 //import com.facebook.react.uimanager.ThemedReactContext;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PermissionChecker;
+
 import org.opencv.android.JavaCameraView;
+import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -60,6 +72,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private File filename;
     private int goodPhotoCounter = 0;
     private int MIN_COUNT = 10;
+    int REQUEST_CODE_CAMERA_PERMISSION = 101;
 
 
     private CvCameraViewListener2 mListener;
@@ -72,6 +85,53 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mScale = 1;
+    }
+
+    @Override
+    public void enableView() {
+        if(true){
+            super.enableView();
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            try {
+                super.enableView();
+            }catch (Exception e){
+                Log.e("repair", "unbelievable exception");
+            }
+            return;
+        }
+
+
+        if (isCameraGranted()) {
+            try {
+                super.enableView();
+            }catch (Exception e){
+                Log.e("repair", "unbelievable exception");
+            }
+            return;
+        }
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+
+            Toast.makeText(getContext(), "Предоставьте доступ к камере в настройках приложения.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", scanForActivity(getContext()).getPackageName(), null);
+            intent.setData(uri);
+            scanForActivity(getContext()).startActivity(intent);
+        } else {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+        }
+    }
+
+    private boolean isCameraGranted(){
+        return ContextCompat.checkSelfPermission(
+                getContext(),
+                Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED;
     }
 
     public interface ImageSavedCallback {
@@ -109,7 +169,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             btm.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-            byte[] byteArray = byteArrayOutputStream .toByteArray();
+            byte[] byteArray = byteArrayOutputStream.toByteArray();
 
             FileOutputStream fos = new FileOutputStream(this.filename);
             fos.write(byteArray);
@@ -142,12 +202,12 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         float hw = this.getWidth() / 2.0f;
         float hh = this.getHeight() / 2.0f;
 
-        float cw  = (float) Resources.getSystem().getDisplayMetrics().widthPixels; //Make sure to import Resources package
-        float ch  = (float)Resources.getSystem().getDisplayMetrics().heightPixels;
+        float cw = (float) Resources.getSystem().getDisplayMetrics().widthPixels; //Make sure to import Resources package
+        float ch = (float) Resources.getSystem().getDisplayMetrics().heightPixels;
 
-        float scale = cw / (float)mh;
-        float scale2 = ch / (float)mw;
-        if(scale2 > scale){
+        float scale = cw / (float) mh;
+        float scale2 = ch / (float) mw;
+        if (scale2 > scale) {
             scale = scale2;
         }
 
@@ -158,13 +218,13 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             mMatrix.preScale(-1, 1, hw, hh); //MH - this will mirror the camera
         }
         mMatrix.preTranslate(hw, hh);
-        if (isFrontCamera){
+        if (isFrontCamera) {
             mMatrix.preRotate(270);
         } else {
             mMatrix.preRotate(90);
         }
         mMatrix.preTranslate(-hw, -hh);
-        mMatrix.preScale(scale,scale,hw,hh);
+        mMatrix.preScale(scale, scale, hw, hh);
     }
 
     @Override
@@ -179,11 +239,11 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         updateMatrix();
     }
 
-    public void setMScale(float value){
+    public void setMScale(float value) {
         mScale = value;
     }
 
-    public float getMScale(){
+    public float getMScale() {
         return mScale;
     }
 
@@ -199,11 +259,11 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         boolean bmpValid = true;
         if (modified != null) {
             try {
-                if(mCacheBitmap == null)
+                if (mCacheBitmap == null)
                     mCacheBitmap = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
 
                 Utils.matToBitmap(modified, mCacheBitmap);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Log.e(TAG, "Mat type: " + modified);
                 Log.e(TAG, "Bitmap type: " + mCacheBitmap.getWidth() + "*" + mCacheBitmap.getHeight());
                 Log.e(TAG, "Utils.matToBitmap() throws an exception: " + e.getMessage());
@@ -218,17 +278,17 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 int saveCount = canvas.save();
                 canvas.setMatrix(mMatrix);
 
-                float scale1 = canvas.getWidth()*1.0f/mCacheBitmap.getWidth();
-                float scale2 = canvas.getHeight()*1.0f/mCacheBitmap.getHeight();
+                float scale1 = canvas.getWidth() * 1.0f / mCacheBitmap.getWidth();
+                float scale2 = canvas.getHeight() * 1.0f / mCacheBitmap.getHeight();
 
                 float scale = mScale * Math.min(scale1, scale2);
 
-                Rect src = new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight());
+                Rect src = new Rect(0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight());
 
-                Rect dst = new Rect((int)((canvas.getWidth() - scale*mCacheBitmap.getWidth()) / 2),
-                                (int)((canvas.getHeight() - scale*mCacheBitmap.getHeight()) / 2),
-                                (int)((canvas.getWidth() - scale*mCacheBitmap.getWidth()) / 2 + scale*mCacheBitmap.getWidth()),
-                                (int)((canvas.getHeight() - scale*mCacheBitmap.getHeight()) / 2 + scale*mCacheBitmap.getHeight()));
+                Rect dst = new Rect((int) ((canvas.getWidth() - scale * mCacheBitmap.getWidth()) / 2),
+                        (int) ((canvas.getHeight() - scale * mCacheBitmap.getHeight()) / 2),
+                        (int) ((canvas.getWidth() - scale * mCacheBitmap.getWidth()) / 2 + scale * mCacheBitmap.getWidth()),
+                        (int) ((canvas.getHeight() - scale * mCacheBitmap.getHeight()) / 2 + scale * mCacheBitmap.getHeight()));
 
                 canvas.drawBitmap(mCacheBitmap, src, dst, null);
 
@@ -278,12 +338,12 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                             if (getContext() == null) return;
                             Log.d("CAM_MSG", hasMeter.toString());
 
-                            if(hasMeter){
+                            if (hasMeter) {
                                 goodPhotoCounter++;
-                                if(goodPhotoCounter > MIN_COUNT){
+                                if (goodPhotoCounter > MIN_COUNT) {
                                     callback.onResults(true);
                                 }
-                            }else if(goodPhotoCounter > 0){
+                            } else if (goodPhotoCounter > 0) {
                                 goodPhotoCounter--;
                             }
                         }
@@ -316,7 +376,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     }
 
     //@Override
-    public void setOnImageSavedCallback(ImageSavedCallback onSavedCallback){
+    public void setOnImageSavedCallback(ImageSavedCallback onSavedCallback) {
         this.onSavedCallback = onSavedCallback;
     }
 
@@ -419,10 +479,59 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     @Override
     public void onResumeALPR() {
-        if (getContext() == null) return;
+        if (getContext() == null)
+            return;
 
-        setCvCameraViewListener(createCvCameraViewListener());
-        CameraView.this.enableView();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            try {
+                if(OpenCVLoader.initDebug()){
+                    setCvCameraViewListener(createCvCameraViewListener());
+                    CameraView.this.enableView();
+                }else{
+                    Log.e("repair", "OpenCVLoader no");
+                }
+            }catch (Exception e){
+                Log.e("repair", "unbelievable exception");
+            }
+            return;
+        }
+
+
+        if (isCameraGranted()) {
+            try {
+                if(OpenCVLoader.initDebug()){
+                    setCvCameraViewListener(createCvCameraViewListener());
+                    CameraView.this.enableView();
+                }else{
+                    Log.e("repair", "OpenCVLoader no");
+                }
+            }catch (Exception e){
+                Log.e("repair", "unbelievable exception");
+            }
+            return;
+        }
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+
+            Toast.makeText(getContext(), "Предоставьте доступ к камере в настройках приложения.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", scanForActivity(getContext()).getPackageName(), null);
+            intent.setData(uri);
+            scanForActivity(getContext()).startActivity(intent);
+        } else {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+        }
+
+        Log.e("repair", "stub");
+
+
+
+
+
+        //setCvCameraViewListener(createCvCameraViewListener());
+        //CameraView.this.enableView();
     }
 
     @Override
@@ -472,7 +581,8 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     }
 
     @Override
-    public void setZoom(int zoom) { }
+    public void setZoom(int zoom) {
+    }
 
     @Override
     public void setTapToFocus(boolean enabled) {
