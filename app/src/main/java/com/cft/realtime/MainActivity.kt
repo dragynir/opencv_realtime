@@ -33,6 +33,10 @@ class MainActivity : AppCompatActivity() {
 
         mOpenCvCameraView = findViewById(R.id.camera_view)
 
+        mOpenCvCameraView.setOnImageSavedCallback {
+            Log.e("repair", "saved!")
+        }
+
         mOpenCvCameraView.setResultsCallback(object: Analyzer.ResultsCallback{
             override fun onFail() {
 
@@ -48,9 +52,9 @@ class MainActivity : AppCompatActivity() {
 
                 Log.d("PICTURE", "load picture")
 
-                DebugModelsUtils.saveToGallery(applicationContext, b, "test1")
+                //DebugModelsUtils.saveToGallery(applicationContext, b, "test1")
 
-                mOpenCvCameraView.disableView()
+                //mOpenCvCameraView.disableView()
             }
         })
 

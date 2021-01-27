@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
@@ -104,7 +105,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         }
 
 
-        if (isCameraGranted()) {
+        if (isCameraGranted() && isStorageGranted()) {
             try {
                 super.enableView();
             }catch (Exception e){
@@ -113,17 +114,17 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             return;
         }
 
-        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.READ_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_CAMERA_PERMISSION);
 
             Toast.makeText(getContext(), "Предоставьте доступ к камере в настройках приложения.", Toast.LENGTH_LONG).show();
-            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера,Память", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", scanForActivity(getContext()).getPackageName(), null);
             intent.setData(uri);
             scanForActivity(getContext()).startActivity(intent);
         } else {
-            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_CAMERA_PERMISSION);
         }
     }
 
@@ -131,6 +132,17 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         return ContextCompat.checkSelfPermission(
                 getContext(),
                 Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isStorageGranted(){
+        return ContextCompat.checkSelfPermission(
+                getContext(),
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                getContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED;
     }
 
@@ -159,15 +171,10 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
         try {
-            Mat mat = Imgcodecs.imdecode(new MatOfByte(data), Imgcodecs.CV_LOAD_IMAGE_UNCHANGED);
-            applyOrientation(mat, true, rotation);
-
-            Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB);
-
-            Bitmap btm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(mat, btm);
+            Bitmap btm = BitmapFactory.decodeByteArray(data, 0, data.length);
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
             btm.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
             byte[] byteArray = byteArrayOutputStream.toByteArray();
 
@@ -177,6 +184,8 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         } catch (java.io.IOException e) {
             Log.e("PictureDemo", "Exception in photoCallback", e);
         }
+        disableView();
+        enableView();
         onSavedCallback.onResults(this.filename.getAbsolutePath());
     }
 
@@ -497,7 +506,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         }
 
 
-        if (isCameraGranted()) {
+        if (isCameraGranted() && isStorageGranted()) {
             try {
                 if(OpenCVLoader.initDebug()){
                     setCvCameraViewListener(createCvCameraViewListener());
@@ -511,17 +520,17 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             return;
         }
 
-        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+        if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.READ_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_CAMERA_PERMISSION);
 
             Toast.makeText(getContext(), "Предоставьте доступ к камере в настройках приложения.", Toast.LENGTH_LONG).show();
-            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Подсказка: Разрешения->Камера,Память", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", scanForActivity(getContext()).getPackageName(), null);
             intent.setData(uri);
             scanForActivity(getContext()).startActivity(intent);
         } else {
-            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+            ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_CAMERA_PERMISSION);
         }
 
         Log.e("repair", "stub");
