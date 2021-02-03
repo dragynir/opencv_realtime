@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.security.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,7 +74,7 @@ public class Analyzer {
     }
 
     public interface ResultsCallback {
-        void onResults(Boolean hasMeter);
+        void onResults(Boolean hasMeter, long delay);
         void onFail();
     }
 
@@ -82,6 +83,7 @@ public class Analyzer {
      */
     private void executeRecognition(final Mat m, final ResultsCallback callback, final WeakReference<Context> context, int rotation) {
         Log.i(TAG, "executeRecognition");
+        final long start = System.currentTimeMillis();
         Context ctx = context.get();
 
         if (ctx == null) {
@@ -101,6 +103,8 @@ public class Analyzer {
 
         final boolean hasMeter = metersFinder.findMeter(bm);
 
+        final long delay = System.currentTimeMillis() - start;
+
         Handler handler = new Handler(ctx.getMainLooper());
 
         handler.post(new Runnable() {
@@ -108,7 +112,7 @@ public class Analyzer {
             @Override
             public void run() {
 
-                callback.onResults(hasMeter);
+                callback.onResults(hasMeter, delay);
                 // callback.onFail();
 
                 if (isProcessing != null) isProcessing.set(false);

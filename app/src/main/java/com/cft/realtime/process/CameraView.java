@@ -11,7 +11,9 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.Area;
@@ -57,7 +59,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private static final String TAG = CameraView.class.getSimpleName();
     private Analyzer.ResultsCallback callback;
     private ImageSavedCallback onSavedCallback;
-    private int quality = Quality.MAX;
+    private int quality = Quality.MEDIUM;
     private Size highResolution;
     private Size mediumResolution;
     private Size lowResolution;
@@ -74,6 +76,9 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private int goodPhotoCounter = 0;
     private int MIN_COUNT = 10;
     int REQUEST_CODE_CAMERA_PERMISSION = 101;
+
+    private boolean DISP_METER = false;
+    private long DISP_DELAY = 0;
 
 
     private CvCameraViewListener2 mListener;
@@ -171,7 +176,9 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     @Override
     public void onPictureTaken(byte[] data, Camera camera) {
         try {
+            Log.e("repair", "start");
             Bitmap btm = BitmapFactory.decodeByteArray(data, 0, data.length);
+            Log.e("repair", "decode array");//300
 
             Matrix matrix = new Matrix();
 
@@ -181,20 +188,21 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
             Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
 
+            Log.e("repair", "mutation");//2100
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-            rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
             byte[] byteArray = byteArrayOutputStream.toByteArray();
+            Log.e("repair", "decode");//15000
 
             FileOutputStream fos = new FileOutputStream(this.filename);
             fos.write(byteArray);
             fos.close();
+            Log.e("repair", "write");//50
         } catch (java.io.IOException e) {
             Log.e("PictureDemo", "Exception in photoCallback", e);
         }
-        disableView();
-        enableView();
         onSavedCallback.onResults(this.filename.getAbsolutePath());
     }
 
@@ -315,7 +323,18 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
+
+                    Paint paint = new Paint();
+
+                    paint.setColor(Color.YELLOW);
+                    paint.setTextSize(30);
+
+
+
+                    canvas.drawText("delay: "+DISP_DELAY, 30, 60, paint);
+                    canvas.drawText("meter: "+DISP_METER, 30, 90, paint);
                 }
+
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }
@@ -351,14 +370,16 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 if (callback != null) {
                     Analyzer.getInstance(new WeakReference<>(getContext())).process(rgba, rotation, new Analyzer.ResultsCallback() {
                         @Override
-                        public void onResults(Boolean hasMeter) {
+                        public void onResults(Boolean hasMeter, long delay) {
                             if (getContext() == null) return;
                             Log.d("CAM_MSG", hasMeter.toString());
+                            DISP_METER = hasMeter;
+                            DISP_DELAY = delay;
 
                             if (hasMeter) {
                                 goodPhotoCounter++;
-                                if (goodPhotoCounter > MIN_COUNT) {
-                                    callback.onResults(true);
+                                if (goodPhotoCounter == MIN_COUNT) {
+                                    callback.onResults(true, delay);
                                 }
                             } else if (goodPhotoCounter > 0) {
                                 goodPhotoCounter--;

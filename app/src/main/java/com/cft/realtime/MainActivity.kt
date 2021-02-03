@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
             }
 
-            override fun onResults(hasMeter: Boolean?) {
+            override fun onResults(hasMeter: Boolean?, delay: Long) {
                 val cw = ContextWrapper(applicationContext)
                 val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
                 val mypath = File(directory, "test.png")
