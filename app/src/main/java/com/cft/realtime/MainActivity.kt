@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.cft.realtime.process.Analyzer
 import com.cft.realtime.process.CameraView
+import com.cft.realtime.process.TfliteReactNativeModule
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.LoaderCallbackInterface
@@ -33,9 +34,9 @@ class MainActivity : AppCompatActivity() {
 
         mOpenCvCameraView = findViewById(R.id.camera_view)
 
-        mOpenCvCameraView.setOnImageSavedCallback {
-            Log.e("repair", "saved!")
-        }
+        val module = TfliteReactNativeModule(this)
+
+        module.loadModels()
 
         mOpenCvCameraView.setResultsCallback(object: Analyzer.ResultsCallback{
             override fun onFail() {
@@ -46,17 +47,24 @@ class MainActivity : AppCompatActivity() {
                 val cw = ContextWrapper(applicationContext)
                 val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
                 val mypath = File(directory, "test.png")
+                Log.e("repair", "before take")
                 mOpenCvCameraView.takePicture(mypath)
+                Log.e("repair", "after take")
 
                 val b = BitmapFactory.decodeFile(mypath.absolutePath)
 
                 Log.d("PICTURE", "load picture")
-
-                //DebugModelsUtils.saveToGallery(applicationContext, b, "test1")
-
-                //mOpenCvCameraView.disableView()
             }
         })
+
+
+        mOpenCvCameraView.setOnImageSavedCallback {
+            val start = System.currentTimeMillis()
+            Log.e("repair", "SavedCallback: "+it)
+            val result = module.analyze(it, false)
+            Log.e("repair", "result: " + result)
+            Log.e("repair", "time: " + (System.currentTimeMillis()-start))
+        }
 
     }
 

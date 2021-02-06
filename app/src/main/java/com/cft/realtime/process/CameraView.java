@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -50,6 +51,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -199,6 +201,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             FileOutputStream fos = new FileOutputStream(this.filename);
             fos.write(byteArray);
             fos.close();
+
             Log.e("repair", "write");//50
         } catch (java.io.IOException e) {
             Log.e("PictureDemo", "Exception in photoCallback", e);
@@ -214,6 +217,11 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         mCamera.setPreviewCallback(null);
 
         // PictureCallback is implemented by the current class
+
+        //если понадобится менять разрешение захватываемой картинки
+        //Camera.Parameters params = mCamera.getParameters();
+        //params.setPictureSize(maxResolution.width, maxResolution.height);
+        //mCamera.setParameters(params);
 
         mCamera.takePicture(null, null, this);
     }
