@@ -34,20 +34,22 @@ public class TfliteReactNativeModule {
         return 0;
     }
 
-    public String analyze(final String path, final Boolean isWater) throws IOException  {
+    public String analyze(final String path, final Boolean isWater) {
         String imagePath = path.replace("file://", "");
 
-
-        ExifInterface exif = new ExifInterface(imagePath);
-        int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-        int rotationInDegrees = exifToDegrees(rotation);
-
-        InputStream inputStream = new FileInputStream(imagePath);
-        Bitmap bitmapRaw = BitmapFactory.decodeStream(inputStream);
-
-
-        Answer answer = analyzer.analyze(bitmapRaw, reactContext.getAssets(), isWater, rotationInDegrees);
-        return answer.toJson();
+		int rotationInDegrees = 0;
+		Bitmap bitmapRaw = null;
+		try {
+		  ExifInterface exif = new ExifInterface(imagePath);
+		  int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+		  rotationInDegrees = exifToDegrees(rotation);
+		  InputStream inputStream = new FileInputStream(imagePath);
+		  bitmapRaw = BitmapFactory.decodeStream(inputStream);
+		  Answer answer = analyzer.analyze(bitmapRaw, reactContext.getAssets(), isWater, rotationInDegrees);
+		  return answer.toJson();
+		}catch (IOException exc){
+		  return null;
+		}
     }
 
 }

@@ -13,15 +13,15 @@ import java.io.OutputStream
 object DebugModelsUtils {
 
     fun saveToGallery(context: Context, bitmap: Bitmap, albumName: String) {
-        val filename = "${System.currentTimeMillis()}.png"
+        val filename = "${System.currentTimeMillis()}.jpg"
         val write: (OutputStream) -> Boolean = {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DCIM}/$albumName")
             }
 

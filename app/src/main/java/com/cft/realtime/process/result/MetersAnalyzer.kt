@@ -188,6 +188,7 @@ class MetersAnalyzer(appContext: Context){
         val readValueOcr = modelsRepository.ocrReadValueModel
         val readSerialOcr = modelsRepository.ocrSerialModel
         val meterNameModel = modelsRepository.meterNameModel
+        val verticalSegmentationModel = modelsRepository.verticalSegmentationModel
 
 
         val pipeline = ResultPipeline()
@@ -271,8 +272,6 @@ class MetersAnalyzer(appContext: Context){
         }
         answer.status = Status.SERIAL_VALUE
 
-
-        val verticalSegmentationModel = VerticalFieldSegmentation(assets)
 
         val value = pipeline.readVerticalSerial(
                 image,

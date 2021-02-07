@@ -2,6 +2,7 @@ package com.cft.realtime.process.model
 
 import android.content.res.AssetManager
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.gpu.GpuDelegate
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -34,9 +35,16 @@ open class Model() {
         output.order(ByteOrder.nativeOrder())
 
         options = Interpreter.Options()
-        if (USE_GPU){
-            options.addDelegate(GpuDelegate())
-        }else{
+        val compatList = CompatibilityList()
+
+        if(USE_GPU){
+            if(compatList.isDelegateSupportedOnThisDevice){
+                val delegateOptions = compatList.bestOptionsForThisDevice
+                options.addDelegate(GpuDelegate(delegateOptions))
+            }else{
+                options.setNumThreads(numThreads)
+            }
+        } else{
             options.setNumThreads(numThreads)
         }
 
