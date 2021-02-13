@@ -1,6 +1,7 @@
 package com.cft.realtime.process.model
 
 import android.content.res.AssetManager
+import android.util.Log
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.gpu.GpuDelegate
@@ -39,6 +40,7 @@ open class Model() {
 
         if(USE_GPU){
             if(compatList.isDelegateSupportedOnThisDevice){
+                Log.d("METER_TIMES", "use gpu")
                 val delegateOptions = compatList.bestOptionsForThisDevice
                 options.addDelegate(GpuDelegate(delegateOptions))
             }else{
@@ -47,7 +49,6 @@ open class Model() {
         } else{
             options.setNumThreads(numThreads)
         }
-
         model = AnalyzerUtils.loadModelFile(assets, MODEL_FILENAME)
     }
 

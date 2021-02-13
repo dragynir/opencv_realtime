@@ -1,0 +1,133 @@
+
+
+[
+    {
+      "name": "mtarif_caskad",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_co505",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_len_electro",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "mtarif_mercury_200.02",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_other",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_neva_103_1s0",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_other",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_neva_101_1s0",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_SOE",
+      "fraction": 1,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_energomera",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_seo",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_c0_446",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_energomera",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_ekf",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_mercury_201.7",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_ce2726",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "mtarif_heba",
+      "fraction": 2,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_coe",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_SOLO",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_leneltktro",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "mtarif_matrix",
+      "fraction": 1,
+      "type": "multi"
+    },
+    {
+      "name": "otarif_mercury_any",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_co_any",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_mercury_201",
+      "fraction": 1,
+      "type": "one"
+    },
+    {
+      "name": "otarif_mercury_202.5",
+      "fraction": 1,
+      "type": "one"
+    }
+  ]
+
+
+
+

@@ -180,6 +180,13 @@ class MetersAnalyzer(appContext: Context){
         val readSerialCrop: Bitmap?
         this.isWater = isWater
 
+        var start = System.currentTimeMillis()
+        var end = start
+
+
+
+
+
 
         val faceModel = modelsRepository.faceSegmentationModel
         val fieldsModel = modelsRepository.fieldsSegmentationModel
@@ -195,12 +202,20 @@ class MetersAnalyzer(appContext: Context){
         val metersInfo = MetersInfo()
         val metersList: List<Meter> = metersInfo.loadModelsInfo(context)
 
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "load info: " + (end - start))
+        start = end
+
+
+
         val inputImage = if(imageRotation != 0) {
             pipeline.rotateImage(inputMeterImage, imageRotation.toFloat())
                     ?: return answer
         }else{
             inputMeterImage
         }
+
 
         if(!isWater) {
             val meterIndex = pipeline.getMeterName(inputImage, meterNameModel)
@@ -209,12 +224,32 @@ class MetersAnalyzer(appContext: Context){
             answer.fraction = currentMeter.fraction
         }
 
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "get meter name: " + (end - start))
+        start = end
+
+
+
+
         var image = pipeline.getFaceIfFound(inputImage, faceModel)
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "face if found: " + (end - start))
+        start = end
 
         //DebugModelsUtils.saveToGallery(context, image, "img")
 
         // check face
         var mask = pipeline.getFieldsMask(image, isWater, fieldsModel, waterFieldModel)
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "get fields 1: " + (end - start))
+        start = end
+
 
         //DebugModelsUtils.saveToGallery(context, mask, "mask")
 
@@ -229,6 +264,11 @@ class MetersAnalyzer(appContext: Context){
             channels = CvUtils.splitBitmap(mask)
             boundRectValue = CvUtils.getBiggestContour(channels[0])
             boundRectSerial = CvUtils.getBiggestContour(channels[2])
+
+
+            end = System.currentTimeMillis()
+            Log.e("METER_TIMES", "get fields on full image: " + (end - start))
+            start = end
         }
 
         if (!checkValueRect(boundRectValue, mask)) {
@@ -243,6 +283,16 @@ class MetersAnalyzer(appContext: Context){
             return answer
         }
 
+
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "get fields: " + (end - start))
+        start = end
+
+
+
+
         readValueCrop = getOcrResult(
                 image,
                 channels[0],
@@ -251,12 +301,22 @@ class MetersAnalyzer(appContext: Context){
                 context
         )
 
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "first ocr: " + (end - start))
+        start = end
+
         answer.tariff = tariffModel.getTariff(readValueCrop!!)
         answer.status = Status.VALUE
 
         if (isWater || boundRectSerial.empty())
             return answer
 
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "tarif: " + (end - start))
+        start = end
 
 
         readSerialCrop = getOcrResult(
@@ -273,12 +333,21 @@ class MetersAnalyzer(appContext: Context){
         answer.status = Status.SERIAL_VALUE
 
 
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "second ocr: " + (end - start))
+        start = end
+
         val value = pipeline.readVerticalSerial(
                 image,
                 channels[2],
                 verticalSegmentationModel,
                 readSerialOcr
         )
+
+
+        end = System.currentTimeMillis()
+        Log.e("METER_TIMES", "vertical: " + (end - start))
+        start = end
 
         if (value != null) {
             answer.vertical = Result_OCR("", value)

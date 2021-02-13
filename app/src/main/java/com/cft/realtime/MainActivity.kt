@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
             Log.e("repair", "SavedCallback: "+it)
             val result = module.analyze(it, false)
             Log.e("repair", "result: " + result)
-            Log.e("repair", "time: " + (System.currentTimeMillis()-start))
+            Log.e("METER_TIMES", "time: " + (System.currentTimeMillis()-start))
         }
 
     }

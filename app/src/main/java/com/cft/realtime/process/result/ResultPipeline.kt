@@ -17,7 +17,6 @@ import org.opencv.core.Mat
 class ResultPipeline() {
 
     fun getFaceIfFound(image: Bitmap, faceModel: FaceSegmentationModel): Bitmap{
-        // TODO первый вызов функции возвращает 0, какой-то баг тут в AnalyzerUtils (RESOLVED)
         val faceMask = faceModel.getMask(image)
 
         val face = CvUtils.findMeterFace(faceMask, image)
