@@ -1,0 +1,26 @@
+
+
+
+  {
+    "number": {
+      "hw_ratio_min": 0.097,
+      "hw_ration_max": 0.369,
+      "square_min": 0.001
+    },
+
+    "serial_number": {
+      "hw_ratio_min": 0.065,
+      "hw_ration_max": 0.4,
+      "square_min": -1
+    },
+
+    "face": {
+      "hw_ratio_min": -1,
+      "hw_ration_max": -1,
+      "square_min": 0.1
+    }
+  }
+
+
+
+
