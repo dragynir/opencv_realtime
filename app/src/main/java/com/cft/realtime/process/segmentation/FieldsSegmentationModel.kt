@@ -29,8 +29,7 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
         BATCH_SIZE = 1
         BYTES_PER_POINT = 4
         TYPES_COUNT = OUTPUT_W * OUTPUT_H * OUTPUT_LABELS
-
-        USE_GPU = false //crashes on true
+        USE_GPU = true
 
 
         init(assets)
@@ -75,7 +74,6 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
                         palette,
                         BYTES_PER_POINT
                 )
-
 
         return Bitmap.createScaledBitmap(mask, originalWidth, originalHeight, true)
     }

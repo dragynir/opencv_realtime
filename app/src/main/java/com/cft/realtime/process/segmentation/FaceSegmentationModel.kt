@@ -26,7 +26,6 @@ class FaceSegmentationModel(assets: AssetManager) : Model() {
         BATCH_SIZE = 1
         BYTES_PER_POINT = 4
         TYPES_COUNT = OUTPUT_H * OUTPUT_W * OUTPUT_LABELS
-
         init(assets)
     }
 

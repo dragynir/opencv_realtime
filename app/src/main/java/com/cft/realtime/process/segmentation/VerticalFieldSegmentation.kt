@@ -26,8 +26,7 @@ class VerticalFieldSegmentation(assets: AssetManager): Model() {
         BATCH_SIZE = 1
         BYTES_PER_POINT = 4
         TYPES_COUNT = OUTPUT_H * OUTPUT_W * OUTPUT_LABELS
-
-        USE_GPU = false //crashes on true?
+        USE_GPU = false
 
         init(assets)
     }

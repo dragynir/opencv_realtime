@@ -15,7 +15,6 @@ class MeterNameModel(assets: AssetManager): Model() {
         CHANNELS_COUNT = 3
         BATCH_SIZE = 1
         BYTES_PER_POINT = 4
-
         init(assets)
     }
 

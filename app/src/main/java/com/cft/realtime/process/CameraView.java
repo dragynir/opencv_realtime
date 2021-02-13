@@ -72,7 +72,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     private boolean plateBorderEnabled;
     private String country = "us";
     private boolean tapToFocusEnabled;
-    private boolean torchEnabled = true;
+    private boolean torchEnabled = false;
     private int rotation;
     private File filename;
     private int goodPhotoCounter = 0;
