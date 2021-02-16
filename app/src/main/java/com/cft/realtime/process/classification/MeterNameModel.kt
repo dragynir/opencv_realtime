@@ -18,16 +18,25 @@ class MeterNameModel(assets: AssetManager): Model() {
         init(assets)
     }
 
+    //Определяет имя (тип) модели счётчика
     fun getModelIndex(inputBitmap: Bitmap): Int {
+        
+        //Масштабируем картинку
         val bitmap = Bitmap.createScaledBitmap(inputBitmap, INPUT_W, INPUT_H, true)
 
+        //Устанавливаем указатели буферов на нулевую позицию   
         output.rewind()
         imageBuffer.rewind()
 
+        //Скопировать картинку в ByteBuffer  
         AnalyzerUtils.imageToFloatBuffer(bitmap, imageBuffer, true)
 
+        //Запуск модели
         run()
 
+
+        //Определяем наиболее вероятную модель
+        //"Имя" модели закодировано номером типа
         var maxConfidence = 0f
         var maxIndex = 0
         for(i in 0 until TYPES_COUNT){
