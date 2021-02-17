@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import com.cft.realtime.process.model.AnalyzerUtils
 import com.cft.realtime.process.model.Model
 
+//Сегментирование счётчика (полностью)
 class FaceSegmentationModel(assets: AssetManager) : Model() {
     // TODO make separate face segmentation(strong, realtime)
 
@@ -31,31 +32,38 @@ class FaceSegmentationModel(assets: AssetManager) : Model() {
 
 
     fun getMask(image: Bitmap): Bitmap {
+
         val originalWidth = image.width
         val originalHeight = image.height
-
         val inputBitmap = Bitmap.createScaledBitmap(image, INPUT_W, INPUT_H, true)
 
+        //Устанавливаем указатели буферов на нулевую позицию  
         output.rewind()
         imageBuffer.rewind()
 
+        //Перевод изображения в буфер
         AnalyzerUtils.imageToFloatBuffer(
                 inputBitmap,
                 imageBuffer
         )
 
+        //Запуск модели        
         run()
 
+        //Создаём палитру
         val palette =
                 AnalyzerUtils.createPalette(
                         OUTPUT_LABELS
                 )
+
+        //Int матрица для decodeSegmentationMasks                
         val segmentBits = Array(OUTPUT_W) {
             IntArray(
                     OUTPUT_H
             )
         }
 
+        //Преобразовать битовый буфер в картинку (маску)
         val mask =
                 AnalyzerUtils.decodeSegmentationMasks(
                         output,
@@ -68,6 +76,7 @@ class FaceSegmentationModel(assets: AssetManager) : Model() {
                         BYTES_PER_POINT
                 )
 
+        //Создаем маску нужных размеров и возвращаем её
         return Bitmap.createScaledBitmap(mask, originalWidth, originalHeight, true)
     }
 

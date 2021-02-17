@@ -20,17 +20,23 @@ class QualityModel(assets: AssetManager): Model() {
         init(assets)
     }
 
-
+    //Даёт оценку изображения разбиением на 3 класса "defocused_blurred", "motion_blurred" и "sharp"
     fun getResultValue(inputBitmap: Bitmap): String {
+        
+        //Масштабируем картинку
         val bitmap = Bitmap.createScaledBitmap(inputBitmap, INPUT_W, INPUT_H, true)
 
+        //Устанавливаем указатели буферов на нулевую позицию 
         output.rewind()
         imageBuffer.rewind()
 
+        //Скопировать картинку в ByteBuffer
         AnalyzerUtils.imageToFloatBuffer(bitmap, imageBuffer, true)
 
+        //Запуск модели  
         run()
 
+        //Определяем наиболее вероятный класс качества изображения
         var maxType = 0
         val outputFloat =
                 floatArrayOf(output.getFloat(0), output.getFloat(4), output.getFloat(4 * 2))
