@@ -9,6 +9,8 @@ import com.cft.realtime.process.ocr.OcrReadValueModel
 import com.cft.realtime.process.ocr.OcrSerialModel
 import com.cft.realtime.process.segmentation.*
 
+
+//Класс для удобного доступа к моделям 
 class ModelsRepository {
 
 

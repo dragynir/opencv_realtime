@@ -22,11 +22,13 @@ import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
 import java.io.File
 
+//Главный объект работы приложения
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mOpenCvCameraView: CameraView
     private lateinit var mIntermediateMat: Mat
 
+    //Запуск приложения
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -76,7 +78,7 @@ class MainActivity : AppCompatActivity() {
         mOpenCvCameraView.enableView()
     }
 
-
+    //Отвечает за готовность приложения получать запросы пользователя
     override fun onResume() {
         super.onResume()
 

@@ -22,6 +22,7 @@ import java.io.FileOutputStream
 import kotlin.system.measureTimeMillis
 
 
+
 class MetersAnalyzer(appContext: Context){
 
 
@@ -37,6 +38,7 @@ class MetersAnalyzer(appContext: Context){
     }
 
 
+    //Обработка колбека
     private val mOpenCVCallBack = object : BaseLoaderCallback(context) {
         override fun onManagerConnected(status: Int) {
             when (status) {
@@ -50,7 +52,10 @@ class MetersAnalyzer(appContext: Context){
         }
     }
 
+    //Инициализация компонент
     private fun initializeComponents() {
+
+        //Проверка OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.d(
                     "TEST",
@@ -60,14 +65,16 @@ class MetersAnalyzer(appContext: Context){
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, context, mOpenCVCallBack)
         } else {
             Log.d("TEST", "OpenCV library found inside package. Using it!")
-//            mOpenCVCallBack.onManagerConnected(LoaderCallbackInterface.SUCCESS)
+            //mOpenCVCallBack.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
 
+        //Инициализация репозитория  
         modelsRepository = ModelsRepository()
         modelsRepository.initModels(context.assets)
     }
 
 
+    //Парсим значение
     private fun parseSerialNumber(serial: String): String {
         val regex = Regex("[\\-0-9]+")
         val matches = regex.findAll(serial)
@@ -102,6 +109,7 @@ class MetersAnalyzer(appContext: Context){
     }
 
 
+    //Сохранение картинки и получение пути до неё
     private fun saveBitmap(bitmap: Bitmap, tag: String, context: Context): String {
         val cw = ContextWrapper(context)
         val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
@@ -122,12 +130,15 @@ class MetersAnalyzer(appContext: Context){
             context: Context
     ): Bitmap? {
 
+        //Выризаем поле со значением (ести нашли) 
         val croppedField = CvUtils.cropImageFromMaskChannel(image, channel) ?: return null
 
-        val field = croppedField.copy(croppedField.config, true)
+             
+        val field = croppedField.copy(croppedField.config, true)//Изменяемая копия
 
         val timeAll = measureTimeMillis {
 
+            //Предсказание модели    
             var value = ""
             value = model.getResultValue(field)
 
@@ -148,6 +159,7 @@ class MetersAnalyzer(appContext: Context){
                 value = parseSerialNumber(value)
             }
 
+            //Записываем ответ модели 
             if (isValue) {
                 answer.value = Result_OCR("", value)
             } else {
@@ -160,6 +172,7 @@ class MetersAnalyzer(appContext: Context){
         return croppedField
     }
 
+
     private fun checkValueRect(boundRectValue: Rect, mask: Bitmap): Boolean{
         val boundRectValueRatio = boundRectValue.height.toFloat() / boundRectValue.width
         val boundRectValueImageRatio = boundRectValue.height.toFloat() * boundRectValue.width / (mask.width * mask.height)
@@ -169,6 +182,8 @@ class MetersAnalyzer(appContext: Context){
         return true
     }
 
+    //Анализ изображения.
+    //Распознание значения счётчика/серии/вертикальной серии
     @SuppressLint("SetTextI18n")
     fun analyze(inputMeterImage: Bitmap, assets: AssetManager, isWater: Boolean, imageRotation: Int): Answer {
 
@@ -187,7 +202,7 @@ class MetersAnalyzer(appContext: Context){
 
 
 
-
+        //Получение ссылок на модели
         val faceModel = modelsRepository.faceSegmentationModel
         val fieldsModel = modelsRepository.fieldsSegmentationModel
         val waterFieldModel = modelsRepository.waterFieldSegmentationModel
@@ -208,7 +223,7 @@ class MetersAnalyzer(appContext: Context){
         start = end
 
 
-
+        //Поворот изображения     
         val inputImage = if(imageRotation != 0) {
             pipeline.rotateImage(inputMeterImage, imageRotation.toFloat())
                     ?: return answer
@@ -217,9 +232,11 @@ class MetersAnalyzer(appContext: Context){
         }
 
 
+        //Получаем данные о счётчике и загружаем в answer
         if(!isWater) {
             val meterIndex = pipeline.getMeterName(inputImage, meterNameModel)
             val currentMeter: Meter = metersList[meterIndex]
+
             answer.model = currentMeter.name
             answer.fraction = currentMeter.fraction
         }
@@ -232,7 +249,7 @@ class MetersAnalyzer(appContext: Context){
 
 
 
-
+        //Выделяем морду счётчика
         var image = pipeline.getFaceIfFound(inputImage, faceModel)
 
 
@@ -253,14 +270,19 @@ class MetersAnalyzer(appContext: Context){
 
         //DebugModelsUtils.saveToGallery(context, mask, "mask")
 
+        //Разбиваем на каналы
         var channels = CvUtils.splitBitmap(mask)
+
+        //получаем часть с значением и серией
         boundRectValue = CvUtils.getBiggestContour(channels[0])
         boundRectSerial = CvUtils.getBiggestContour(channels[2])
 
+        //Ищем поля на всей фотке
         if (!checkValueRect(boundRectValue, mask)) {
             // check full image
             image = inputImage
             mask = pipeline.getFieldsMask(image, isWater, fieldsModel, waterFieldModel)
+
             channels = CvUtils.splitBitmap(mask)
             boundRectValue = CvUtils.getBiggestContour(channels[0])
             boundRectSerial = CvUtils.getBiggestContour(channels[2])
@@ -270,14 +292,17 @@ class MetersAnalyzer(appContext: Context){
             Log.e("METER_TIMES", "get fields on full image: " + (end - start))
             start = end
         }
+        
 
         if (!checkValueRect(boundRectValue, mask)) {
             answer.status = 20
             return answer
         }
 
+        //Статус: ничего нет
         answer.status = Status.NOTHING
 
+        //Если не нашли значения, выходим
         if (boundRectValue.empty()) {
             answer.status = 20
             return answer
@@ -292,7 +317,7 @@ class MetersAnalyzer(appContext: Context){
 
 
 
-
+        //Получаем значение с счётчика
         readValueCrop = getOcrResult(
                 image,
                 channels[0],
@@ -307,7 +332,10 @@ class MetersAnalyzer(appContext: Context){
         Log.e("METER_TIMES", "first ocr: " + (end - start))
         start = end
 
+        
+        //Определяем тариф
         answer.tariff = tariffModel.getTariff(readValueCrop!!)
+        //Статус: есть тариф счётчика
         answer.status = Status.VALUE
 
         if (isWater || boundRectSerial.empty())
@@ -318,7 +346,7 @@ class MetersAnalyzer(appContext: Context){
         Log.e("METER_TIMES", "tarif: " + (end - start))
         start = end
 
-
+        //Получаем серию счётчика
         readSerialCrop = getOcrResult(
                 image,
                 channels[2],
@@ -327,9 +355,12 @@ class MetersAnalyzer(appContext: Context){
                 context
         )
 
+        //Если ничего не получили
         if (readSerialCrop == null) {
             return answer
         }
+
+        //Статус: есть серия счётчика
         answer.status = Status.SERIAL_VALUE
 
 
@@ -337,6 +368,7 @@ class MetersAnalyzer(appContext: Context){
         Log.e("METER_TIMES", "second ocr: " + (end - start))
         start = end
 
+        //Получаем серию счётчика (вертикально)
         val value = pipeline.readVerticalSerial(
                 image,
                 channels[2],
@@ -349,6 +381,7 @@ class MetersAnalyzer(appContext: Context){
         Log.e("METER_TIMES", "vertical: " + (end - start))
         start = end
 
+        //Если есть, загружаем. 
         if (value != null) {
             answer.vertical = Result_OCR("", value)
         }

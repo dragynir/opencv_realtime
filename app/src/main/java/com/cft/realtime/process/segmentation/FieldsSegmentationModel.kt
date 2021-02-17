@@ -6,6 +6,7 @@ import android.util.Log
 import com.cft.realtime.process.model.AnalyzerUtils
 import com.cft.realtime.process.model.Model
 
+//Сегментирование полей с данными
 class FieldsSegmentationModel(assets: AssetManager): Model() {
 
     var OUTPUT_W: Int = 128
@@ -41,28 +42,35 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
 
         val inputBitmap = Bitmap.createScaledBitmap(image, INPUT_W, INPUT_H, true)
 
+        //Устанавливаем указатели буферов на нулевую позицию
         output.rewind()
         imageBuffer.rewind()
 
+        //Перевод изображения в буфер
         AnalyzerUtils.imageToFloatBuffer(
                 inputBitmap,
                 imageBuffer
         )
 
+        //Запуск модели
         Log.e("repair", "before stab")
         run()
         Log.e("repair", "after stab")
 
+        //Создаём палитру
         val palette =
                 AnalyzerUtils.createPalette(
                         OUTPUT_LABELS
                 )
+
+        //Int матрица для decodeSegmentationMasks                
         val segmentBits = Array(OUTPUT_W) {
             IntArray(
                     OUTPUT_H
             )
         }
 
+        //Преобразовать битовый буфер в картинку (маску)
         val mask =
                 AnalyzerUtils.decodeSegmentationMasks(
                         output,
@@ -75,6 +83,7 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
                         BYTES_PER_POINT
                 )
 
+        //Создаем маску нужных размеров и возвращаем её
         return Bitmap.createScaledBitmap(mask, originalWidth, originalHeight, true)
     }
 }
