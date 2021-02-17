@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.util.Log
+import com.cft.realtime.DebugModelsUtils
 import com.cft.realtime.process.knowledge.Meter
 import com.cft.realtime.process.knowledge.MetersInfo
 import com.cft.realtime.process.ocr.OcrModel
@@ -161,11 +162,31 @@ class MetersAnalyzer(appContext: Context){
     }
 
     private fun checkValueRect(boundRectValue: Rect, mask: Bitmap): Boolean{
+        Log.e("repair", "check bound: "+boundRectValue.width+"x"+boundRectValue.height)
+        Log.e("repair", "check mask: "+mask.width+"x"+mask.height)
+
         val boundRectValueRatio = boundRectValue.height.toFloat() / boundRectValue.width
         val boundRectValueImageRatio = boundRectValue.height.toFloat() * boundRectValue.width / (mask.width * mask.height)
-        if (boundRectValueRatio < 0.097 || boundRectValueRatio > 0.369 || boundRectValueImageRatio < 0.001) {
+
+        if(boundRectValueRatio < 0.097){
+            Log.e("repair", "too plain: "+boundRectValueRatio)
             return false
         }
+
+        if(boundRectValueRatio > 0.369){
+            Log.e("repair", "too thin: "+boundRectValueRatio)
+            //return false
+        }
+
+        if(boundRectValueImageRatio < 0.001){
+            Log.e("repair", "too small: "+boundRectValueImageRatio)
+            return false
+        }
+
+        /*
+        if (boundRectValueRatio < 0.097 || boundRectValueRatio > 0.369 || boundRectValueImageRatio < 0.001) {
+            return false
+        }*/
         return true
     }
 
@@ -217,6 +238,7 @@ class MetersAnalyzer(appContext: Context){
         }
 
 
+        DebugModelsUtils.saveAsDBGFile(context, inputImage, "DBG_image")
         if(!isWater) {
             val meterIndex = pipeline.getMeterName(inputImage, meterNameModel)
             val currentMeter: Meter = metersList[meterIndex]
@@ -235,23 +257,25 @@ class MetersAnalyzer(appContext: Context){
 
         var image = pipeline.getFaceIfFound(inputImage, faceModel)
 
+        DebugModelsUtils.saveAsDBGFile(context, image, "DBG_face")
 
         end = System.currentTimeMillis()
         Log.e("METER_TIMES", "face if found: " + (end - start))
         start = end
 
-        //DebugModelsUtils.saveToGallery(context, image, "img")
+        //DebugModelsUtils.saveAsDBGFile(context, image, "img")
 
         // check face
         var mask = pipeline.getFieldsMask(image, isWater, fieldsModel, waterFieldModel)
 
+        DebugModelsUtils.saveAsDBGFile(context, mask, "DBG_mask")
 
         end = System.currentTimeMillis()
         Log.e("METER_TIMES", "get fields 1: " + (end - start))
         start = end
 
 
-        //DebugModelsUtils.saveToGallery(context, mask, "mask")
+        //DebugModelsUtils.saveAsDBGFile(context, mask, "mask")
 
         var channels = CvUtils.splitBitmap(mask)
         boundRectValue = CvUtils.getBiggestContour(channels[0])
@@ -261,6 +285,8 @@ class MetersAnalyzer(appContext: Context){
             // check full image
             image = inputImage
             mask = pipeline.getFieldsMask(image, isWater, fieldsModel, waterFieldModel)
+            //
+            DebugModelsUtils.saveAsDBGFile(context, mask, "DBG_mask_if")
             channels = CvUtils.splitBitmap(mask)
             boundRectValue = CvUtils.getBiggestContour(channels[0])
             boundRectSerial = CvUtils.getBiggestContour(channels[2])
@@ -272,6 +298,7 @@ class MetersAnalyzer(appContext: Context){
         }
 
         if (!checkValueRect(boundRectValue, mask)) {
+            Log.e("repair", "not checkable. !checkValueRect(boundRectValue, mask)")
             answer.status = 20
             return answer
         }
@@ -300,7 +327,7 @@ class MetersAnalyzer(appContext: Context){
                 true,
                 context
         )
-
+        DebugModelsUtils.saveAsDBGFile(context, readValueCrop!!, "DBG_readValueCrop")
 
 
         end = System.currentTimeMillis()
@@ -326,6 +353,7 @@ class MetersAnalyzer(appContext: Context){
                 false,
                 context
         )
+        DebugModelsUtils.saveAsDBGFile(context, readSerialCrop!!, "DBG_readSerialCrop")
 
         if (readSerialCrop == null) {
             return answer

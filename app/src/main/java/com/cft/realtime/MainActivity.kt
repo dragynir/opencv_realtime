@@ -15,6 +15,8 @@ import androidx.core.content.ContextCompat
 import com.cft.realtime.process.Analyzer
 import com.cft.realtime.process.CameraView
 import com.cft.realtime.process.TfliteReactNativeModule
+import com.cft.realtime.process.utils.Bucket
+import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.LoaderCallbackInterface
@@ -61,8 +63,10 @@ class MainActivity : AppCompatActivity() {
         mOpenCvCameraView.setOnImageSavedCallback {
             val start = System.currentTimeMillis()
             Log.e("repair", "SavedCallback: "+it)
+            Bucket.GPU_FOR_F_SEGM = gpu_sw.isChecked
             val result = module.analyze(it, false)
             Log.e("repair", "result: " + result)
+            text_out.setText(result+": " + Bucket.GPU_FOR_F_SEGM)
             Log.e("METER_TIMES", "time: " + (System.currentTimeMillis()-start))
         }
 

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.cft.realtime.process.model.AnalyzerUtils
 import com.cft.realtime.process.model.Model
+import com.cft.realtime.process.utils.Bucket
 
 class FieldsSegmentationModel(assets: AssetManager): Model() {
 
@@ -16,7 +17,7 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
     var OUTPUT_LABELS: Int = 1
 
     init {
-        MODEL_FILENAME = "fields_model_segm_addtoloca512_512.tflite"//TODO: OCR на рилтайм
+        MODEL_FILENAME = "meters_lite_fields_segment_without_model512_512.tflite"//TODO: OCR на рилтайм
         INPUT_H = 512
         INPUT_W = 512
         OUTPUT_W = 512
@@ -24,13 +25,15 @@ class FieldsSegmentationModel(assets: AssetManager): Model() {
         VALUE_THRESHOLD = 0.7f
         SERIAL_THRESHOLD = 0.6f
         MODEL_THRESHOLD = 0.5f
-        OUTPUT_LABELS = 3
+        OUTPUT_LABELS = 2
         CHANNELS_COUNT = 3
         BATCH_SIZE = 1
         BYTES_PER_POINT = 4
         TYPES_COUNT = OUTPUT_W * OUTPUT_H * OUTPUT_LABELS
-        USE_GPU = true
 
+
+        //USE_GPU = false//crash when true
+        USE_GPU = Bucket.GPU_FOR_F_SEGM
 
         init(assets)
     }
