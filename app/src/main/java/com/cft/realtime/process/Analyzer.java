@@ -43,6 +43,8 @@ public class Analyzer {
 
         HandlerThread handlerThread = new HandlerThread("HandlerThread");
         handlerThread.start();
+
+        //Инициализируем обрабодчик сообщений
         mHandler = new Handler(handlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -66,6 +68,7 @@ public class Analyzer {
     /**
      * singleton implementation, is used from main thread only
      */
+    //Выдать интерфейс
     static Analyzer getInstance(WeakReference<Context> context) {
         if (instance == null) {
             instance = new Analyzer(context.get());
@@ -86,6 +89,7 @@ public class Analyzer {
         final long start = System.currentTimeMillis();
         Context ctx = context.get();
 
+        //если нет контекста или не правельная матрица, выходим
         if (ctx == null) {
             finishExecution(ctx, callback);
             return;
@@ -95,20 +99,22 @@ public class Analyzer {
             return;
         }
 
+
+        //Поворот по часовой стрелке
         applyOrientation(m, true, rotation);
 
+        //Переносим матрицу в bitmap
         Bitmap bm = Bitmap.createBitmap(m.cols(), m.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bm);
 
-
+        //Определяем есть ли счётчик
         final boolean hasMeter = metersFinder.findMeter(bm);
 
         final long delay = System.currentTimeMillis() - start;
 
+        //Обработка результата модели
         Handler handler = new Handler(ctx.getMainLooper());
-
         handler.post(new Runnable() {
-
             @Override
             public void run() {
 
@@ -130,6 +136,7 @@ public class Analyzer {
             if (isProcessing != null) isProcessing.set(false);
             return;
         }
+
         Handler handler = new Handler(ctx.getMainLooper());
         handler.post(new Runnable() {
             @Override

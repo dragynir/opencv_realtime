@@ -15,7 +15,7 @@ import java.nio.channels.FileChannel
 import java.util.*
 import kotlin.jvm.Throws
 
-//Утилиты для анализа
+//Утилита для анализа
 object AnalyzerUtils {
 
     private val random = Random(System.currentTimeMillis())

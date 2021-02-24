@@ -32,6 +32,8 @@ class RealtimeFieldsSegmentationModel(assets: AssetManager): Model() {
         init(assets)
     }
 
+
+    //Получение маски
     fun getMask(image: Bitmap): Bitmap {
         val originalWidth = image.width
         val originalHeight = image.height

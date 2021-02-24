@@ -40,17 +40,22 @@ class MainActivity : AppCompatActivity() {
 
         val module = TfliteReactNativeModule(this)
 
+        //Инициализируем модели (сейчас только MetersAnalyzer)
         module.loadModels()
 
+        //Определяем Callback на захват изображения
         mOpenCvCameraView.setResultsCallback(object: Analyzer.ResultsCallback{
             override fun onFail() {
 
             }
 
             override fun onResults(hasMeter: Boolean?, delay: Long) {
+
                 val cw = ContextWrapper(applicationContext)
                 val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
                 val mypath = File(directory, "test.png")
+
+                //Захват изображения
                 Log.e("repair", "before take")
                 mOpenCvCameraView.takePicture(mypath)
                 Log.e("repair", "after take")
@@ -61,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-
+        //Определяем Callback на сохранение изображения
         mOpenCvCameraView.setOnImageSavedCallback {
             val start = System.currentTimeMillis()
             Log.e("repair", "SavedCallback: "+it)
@@ -74,6 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    //Активация CameraView
     private fun activateOpenCVCameraView() {
         // everything needed to start a camera preview
 //        mOpenCvCameraView.setPe()
@@ -107,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //Обработка колбека
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
             when (status) {

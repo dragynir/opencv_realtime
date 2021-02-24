@@ -168,6 +168,7 @@ class MetersAnalyzer(appContext: Context){
         return croppedField
     }
 
+    //Проверка вырезанного прямоугольника по размеру
     private fun checkValueRect(boundRectValue: Rect, mask: Bitmap): Boolean{
         Log.e("repair", "check bound: "+boundRectValue.width+"x"+boundRectValue.height)
         Log.e("repair", "check mask: "+mask.width+"x"+mask.height)
