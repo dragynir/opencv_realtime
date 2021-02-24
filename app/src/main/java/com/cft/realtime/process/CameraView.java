@@ -2,12 +2,14 @@ package com.cft.realtime.process;
 
 import android.Manifest;
 import android.app.Activity;
+
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -16,15 +18,18 @@ import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+
 import android.hardware.Camera;
 import android.hardware.Camera.Area;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
+
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
+
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -39,6 +44,7 @@ import androidx.core.content.PermissionChecker;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -95,6 +101,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         mScale = 1;
     }
 
+    //Включить подключение камеры
     @Override
     public void enableView() {
         if(true){
@@ -135,6 +142,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         }
     }
 
+    //Есть ли доступ к камере
     private boolean isCameraGranted(){
         return ContextCompat.checkSelfPermission(
                 getContext(),
@@ -142,22 +150,26 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         ) == PackageManager.PERMISSION_GRANTED;
     }
 
+    //Есть ли доступ к файлам (чтение/запись)
     private boolean isStorageGranted(){
         return ContextCompat.checkSelfPermission(
                 getContext(),
-                Manifest.permission.READ_EXTERNAL_STORAGE
+                Manifest.permission.READ_EXTERNAL_STORAGE //Чтение файлов
         ) == PackageManager.PERMISSION_GRANTED &&
+
                 ContextCompat.checkSelfPermission(
                 getContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                Manifest.permission.WRITE_EXTERNAL_STORAGE //Запись файлов
         ) == PackageManager.PERMISSION_GRANTED;
     }
 
+    //Интерфейс колбека на сохранение картинки
     public interface ImageSavedCallback {
         void onResults(String imagePath);
     }
 
 
+    //Поворот матрици
     private void applyOrientation(Mat rgba, boolean clockwise, int rotation) {
         if (rotation == Surface.ROTATION_0) {
             // Rotate clockwise / counter clockwise 90 degrees
@@ -209,6 +221,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         onSavedCallback.onResults(this.filename.getAbsolutePath());
     }
 
+    //Сделать Фото
     public void takePicture(final File fileName) {
         Log.i("PICTURE", "Taking picture");
         this.filename = fileName;
@@ -280,15 +293,19 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         return mScale;
     }
 
+
+    //Получить кадр экрана и отрисовать новый кадр
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) { //replaces existing deliverAndDrawFrame
         Mat modified;
 
+        //Получаем матрицу кадра
         if (mListener != null) {
             modified = mListener.onCameraFrame(frame);
         } else {
             modified = frame.rgba();
         }
 
+        //Переводим матрицу в bitmap, если получится
         boolean bmpValid = true;
         if (modified != null) {
             try {
@@ -304,11 +321,18 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             }
         }
 
+        //Если получилось перевести
         if (bmpValid && mCacheBitmap != null) {
+
+            //Получаем пиксели экрана
             Canvas canvas = getHolder().lockCanvas();
+            //Если можно изменять экран
             if (canvas != null) {
+
+                //Отчищаем экран
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
                 int saveCount = canvas.save();
+                //Задаём матрицу
                 canvas.setMatrix(mMatrix);
 
                 float scale1 = canvas.getWidth() * 1.0f / mCacheBitmap.getWidth();
@@ -316,8 +340,10 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
                 float scale = mScale * Math.min(scale1, scale2);
 
+                //Прямоугольник интересующей нас области в mCacheBitmap
                 Rect src = new Rect(0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight());
 
+                //Прямоугольник, в который будет масштабироваться/переводиться растровое изображение
                 Rect dst = new Rect((int) ((canvas.getWidth() - scale * mCacheBitmap.getWidth()) / 2),
                         (int) ((canvas.getHeight() - scale * mCacheBitmap.getHeight()) / 2),
                         (int) ((canvas.getWidth() - scale * mCacheBitmap.getWidth()) / 2 + scale * mCacheBitmap.getWidth()),
@@ -328,6 +354,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                 //Restore canvas after draw bitmap
                 canvas.restoreToCount(saveCount);
 
+                //Изменяем и отрисовываем (fps, delay, meter)
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
@@ -338,11 +365,11 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                     paint.setTextSize(30);
 
 
-
                     canvas.drawText("delay: "+DISP_DELAY, 30, 60, paint);
                     canvas.drawText("meter: "+DISP_METER, 30, 90, paint);
                 }
 
+                //Завершение изменения и отресовка
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }
@@ -359,8 +386,11 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         mListener = new CvCameraViewListener2() {
             @Override
             public void onCameraViewStarted(int width, int height) {
+                //Получаем поворот
                 rotation = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+                //Иничиализируем разрешения
                 initResolutions();
+                //Устанавливаем режим вспышки
                 setFlashMode(torchEnabled);
             }
 
@@ -375,6 +405,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
                 Log.d("CAM_RGB", "RGB");
 
+                //Задаём ResultCallback
                 if (callback != null) {
                     Analyzer.getInstance(new WeakReference<>(getContext())).process(rgba, rotation, new Analyzer.ResultsCallback() {
                         @Override
@@ -401,12 +432,14 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
                         }
                     }, new WeakReference<>(getContext()));
                 }
+
                 return rgba;
             }
         };
         return mListener;
     }
 
+    //Перевод Context в Activity
     public static Activity scanForActivity(Context viewContext) {
         if (viewContext == null)
             return null;
@@ -431,13 +464,18 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         this.callback = callback;
     }
 
+    //Инициализировать Разрешение
     private void initResolutions() {
+        //Список разрешений камеры
         List<Size> resolutionList = mCamera.getParameters().getSupportedPreviewSizes();
+
+        //переменные разршений
         maxResolution = mCamera.getParameters().getPreviewSize();
         highResolution = maxResolution;
         mediumResolution = maxResolution;
         lowResolution = maxResolution;
 
+        //Определение разрешений
         ListIterator<Size> resolutionItr = resolutionList.listIterator();
         while (resolutionItr.hasNext()) {
             Size s = resolutionItr.next();
@@ -453,10 +491,12 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         if (lowResolution.equals(highResolution)) {
             lowResolution = mediumResolution;
         }
+        //Установлиавем качество камеры
         applyQuality(quality);
     }
 
 
+    //Установить разрешение камеры
     private void setResolution(Size resolution) {
         if (resolution == null) return;
         disconnectCamera();
@@ -505,6 +545,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 //        onResumeALPR();
     }
 
+    //Установить качество камеры
     private void applyQuality(int quality) {
         switch (quality) {
             case Quality.LOW:
@@ -528,6 +569,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         if (getContext() == null)
             return;
 
+        //Приверка на версию SDK (если мен)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             try {
                 if(OpenCVLoader.initDebug()){
@@ -539,10 +581,12 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             }catch (Exception e){
                 Log.e("repair", "unbelievable exception");
             }
-            return;
+
+            return; //Выходим
         }
 
 
+        //Если получены разрешения от пользовотеля
         if (isCameraGranted() && isStorageGranted()) {
             try {
                 if(OpenCVLoader.initDebug()){
@@ -554,8 +598,10 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
             }catch (Exception e){
                 Log.e("repair", "unbelievable exception");
             }
-            return;
+            return; //Выходим
         }
+
+        //Подсказка пользовотелю как дать разрешения на камеру и память
 
         if (ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.CAMERA) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.READ_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(scanForActivity(getContext()), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             ActivityCompat.requestPermissions(scanForActivity(getContext()), new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_CAMERA_PERMISSION);
@@ -582,16 +628,19 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
         if (tapToFocusEnabled && mCamera != null) {
             Camera camera = mCamera;
             camera.cancelAutoFocus();
             Rect focusRect = new Rect(-1000, -1000, 1000, 0);
+
 
             Parameters parameters = camera.getParameters();
             if (parameters.getFocusMode().equals(Parameters.FOCUS_MODE_AUTO)) {
                 parameters.setFocusMode(Parameters.FOCUS_MODE_AUTO);
             }
 
+            //если макс. число областей фокусировки >0, добавляем область focusRect
             if (parameters.getMaxNumFocusAreas() > 0) {
                 List<Area> mylist = new ArrayList<Area>();
                 mylist.add(new Area(focusRect, 1000));
@@ -627,8 +676,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     }
 
     @Override
-    public void setZoom(int zoom) {
-    }
+    public void setZoom(int zoom) {    }
 
     @Override
     public void setTapToFocus(boolean enabled) {
@@ -650,6 +698,7 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
         plateBorderRgb = new int[]{r, g, b};
     }
 
+    //Режим вспышки
     private void setFlashMode(boolean torchEnabled) {
         if (mCamera == null) {
             return;
@@ -674,8 +723,10 @@ public class CameraView extends JavaCameraView implements ICameraView, Camera.Pi
     public void setRotateMode(boolean isLandscape) {
         Context context = getContext();
         if (context == null) return;
+        //Получаем activity по контексту
         Activity activity = scanForActivity(context);
         if (activity == null) return;
+        //установить
         activity.setRequestedOrientation(isLandscape
                 ? ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 : ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
